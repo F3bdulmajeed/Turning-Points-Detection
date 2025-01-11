@@ -32,7 +32,7 @@ interval_set<double> CreateInterval(double s, double e) {
   return result;
 }
 
-// Calculate the difference between a range and a set
+// Calculate the difference between (-pi,pi] and a set
 interval_set<double> calculateDifference(interval_set<double> set) {
   interval_set<double> range = CreateInterval(-boost::math::constants::pi<double>(), boost::math::constants::pi<double>());
   interval_set<double> result = range - set;
