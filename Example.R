@@ -1,12 +1,42 @@
+
+################################################################################
+#
+# Purpose: Detecting turning points in high-resolution data on animal movement
+#
+# Author: Abdulmajeed Alharbi
+#
+# Reference: ....
+#
+# Date created: January 11 2025
+#
+################################################################################
+
+
+
+# The required packages
+required_packages <- c("Rcpp", "Rfast", "zoo")
+
+# Install missing packages
+for (pkg in required_packages) {
+  if (!requireNamespace(pkg, quietly = TRUE)) {
+    install.packages(pkg)
+  }
+}
+
+# Load the packages
 library(Rcpp)
 library(Rfast)
 library(zoo)
-Rcpp::sourceCpp("the algorthims.cpp")
+
+# read the c++ function
+Rcpp::sourceCpp("The_algorithms.cpp")
 
 
 # simulate an example 
 set.seed(111)
 h <- c( rvonmises(1000 , -pi/2, 10) , rvonmises(1000 , pi/2, 10) )
+
+
 # Calculate rho , kappa_rho , kappa_mu. 
 
 ## Using secussive difference 
@@ -17,10 +47,9 @@ kappa_mu <- (1-rho^2)*kappa_rho
 # Using non-parameteric method
 
 # Compute rolling medians
+window <- 51
 ms <- rollmedian(sin(h), window, na.pad = TRUE, align = "center")
 mc <- rollmedian(cos(h), window, na.pad = TRUE, align = "center")
-
-# Compute moving median 
 med_head <- atan2(ms, mc)
 
 # residuals of moving median filter
@@ -45,6 +74,17 @@ kappa_mu  <- Rfast::vm.mle(errors)$param[2]
 
 # fit the IID model 
 penalty <-  -2*log(length(h))/kappa_mu   * (1+rho)/(1-rho)
-tps <- AFPOP(sin(h), cos(h), penalty)
+tps <-  AFPOP(sin(h), cos(h), penalty) 
 sort(tps)
 
+
+# fit the AR1 model 
+penalty <-  -2*log(length(h))/kappa_rho
+mu <- seq(-pi,pi,  length = 720 )
+cos_h <- cos(h) ; sin_h <- sin(h) ; cos_mu<- cos(mu) ; sin_mu<- sin(mu)
+Msine <- Outer(sin_h , sin_mu , "*")
+Mcosine <- Outer(cos_h , cos_mu , "*")
+D <- cos(diff(h))
+M <-  Msine + Mcosine
+tps <- DFPOP(M,D,rho,penalty)
+sort(tps)
