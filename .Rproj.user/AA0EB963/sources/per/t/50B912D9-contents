@@ -12,16 +12,15 @@
 
 
 #include <Rcpp.h>
-#include <algorithm>
 #include <boost/numeric/interval.hpp>
 #include <boost/icl/interval.hpp>
 #include <boost/icl/interval_set.hpp>
 #include <boost/math/constants/constants.hpp>
-#include <iostream>
 
 using namespace Rcpp;
 using namespace boost::numeric;
 using namespace boost::icl;
+
 
 
 
@@ -32,72 +31,75 @@ interval_set<double> CreateInterval(double s, double e) {
   return result;
 }
 
-// Calculate the difference between (-pi,pi] and a set
-interval_set<double> calculateDifference(interval_set<double> set) {
-  interval_set<double> range = CreateInterval(-boost::math::constants::pi<double>(), boost::math::constants::pi<double>());
+// Calculate the complement of an interval set in the circular range [-π, π]
+interval_set<double> complementInterval(interval_set<double> set) {
+  interval_set<double> range = CreateInterval( -M_PI, M_PI );
   interval_set<double> result = range - set;
   return result;
 }
 
 
-
+// Class to handle and store cosine wave segments
+// Each cosine wave is characterised by 4 components 
+// R cos(mu - alpha) +  z      in the range I
 
 class CosineSegment {
-public:
-  CosineSegment(interval_set<double> I , int tau, double a, double b, double c): I(I), tau(tau), a(a), b(b), c(c) {
-    R = 1;                        // Initialize resultant length in constructor
-    maxima = 1 + c;               // Initialize maxima based on R
-  }
-  
-  // Function to update the values of sine and cosine
-  void update(double ss, double cc) {
-    a += ss;
-    b += cc;
-    R = std::sqrt(a * a + b * b);  // Recalculate resultant length
-    maxima = R + c;                // Update maxima based on new R
-  }
-  
-  // Function to return an interval based on the value of 'z = Fs + penalty/k'
-  interval_set<double> root_finder(double z) {
-    double dis = (z - c) / R; 
-    
-    // If the value is out of bounds, return empty interval
-    if (dis > 1) {
-      return interval_set<double>(); // Return an empty interval
-    }
-    
-    // If the solution spans the entire space, return [-π, π)
-    if (dis < -1) {
-      return I;
-    }
-    
-    // Otherwise, compute the solution interval
-    double alpha = std::atan2(a, b);    // Mean angle
-    double lhs   = std::acos(dis);      // Angular displacement
-    
-    // Calculate the lower and upper bounds for the interval
-    double lower = std::fmod(-lhs + alpha + M_PI, 2 * M_PI) - M_PI;
-    double upper = std::fmod(lhs  + alpha + M_PI, 2 * M_PI) - M_PI;
-    
-    interval_set<double> result;
-    if (lower > upper) {
-      interval_set<double> A = CreateInterval(upper, lower);
-      result = calculateDifference(A);
-    } else {
-      result = CreateInterval(lower, upper);
-    }
-    
-    I =  result&I;
-    return I;
-  }
-  
-  interval_set<double> I;  // Interval for the segment
-  int tau;                 // Time index
-  double a;                // Sine component
-  double b;                // Cosine component
-  double c;                // Constant value
-  double R;                // Resultant length (magnitude of vector)
-  double maxima;           // Maximum value (R + c)
+
+    public:
+      CosineSegment(interval_set<double> I , int tau, double a, double b, double c): I(I), tau(tau), a(a), b(b), c(c) {
+        R = 1;                        // Initialize resultant length
+        maxima = R + c;               // Initialize maximum based on R
+      }
+      
+      // Update the segment with new sine and cosine values
+      void update(double sin_h, double cos_h) {
+        a += sin_h;
+        b += cos_h;
+        R = std::sqrt(a * a + b * b);
+        maxima = R + c;
+      }
+      
+      // Find the solution intervals satisfying a penalized value
+      interval_set<double> root_finder(double z) {
+        double discriminant = (z - c) / R; 
+        
+        // If the value is out of bounds, return empty interval (No solution)
+        if (discriminant > 1) {
+          return interval_set<double>(); // Return an empty interval
+        }
+        
+        // If the solution spans the entire space.
+        if (discriminant < -1) {
+          return I;
+        }
+        
+        // Otherwise, compute the solution interval
+        double alpha = std::atan2(a, b);    // Mean angle
+        double lhs   = std::acos(discriminant);      // Angular displacement
+        
+        // Calculate the lower and upper bounds for the interval
+        double lower = std::fmod(-lhs + alpha + M_PI, 2 * M_PI) - M_PI;
+        double upper = std::fmod(lhs  + alpha + M_PI, 2 * M_PI) - M_PI;
+        
+        interval_set<double> result;
+        if (lower > upper) {
+          interval_set<double> A = CreateInterval(upper, lower);
+          result = complementInterval(A);
+        } else {
+          result = CreateInterval(lower, upper);
+        }
+        
+        I =  result&I;
+        return I;
+      }
+      
+      interval_set<double> I;  // Interval for the segment
+      int tau;                 // Time index
+      double a;                // Sine component
+      double b;                // Cosine component
+      double c;                // Constant value
+      double R;                // Resultant length (magnitude of vector)
+      double maxima;           // Maximum value (R + c)
 };
 
 
@@ -109,12 +111,10 @@ public:
 
 // [[Rcpp::export]]
 std::vector<int> AFPOP(NumericVector sines, NumericVector cosines, double penalty) {
-  // The implementation of FPOP algorithm
-  // A Rcpp wrapper function
-  // input:
-  //         sines of headings
-  //         cosines of headings
-  //         penalty constant 
+  // Parameters:
+  // sines - Sine values of headings
+  // cosines - Cosine values of headings
+  // penalty - Penalty constant for segmentation
   
   
   int n = sines.size();
@@ -127,7 +127,7 @@ std::vector<int> AFPOP(NumericVector sines, NumericVector cosines, double penalt
   
   // A vector to store the most recent turning-points
   std::vector<int> last_tps(n);
-  
+    
   for(int t = 1; t < n; ++t) {
     double maximum = -std::numeric_limits<double>::infinity();
     int tau = 0;
@@ -157,7 +157,7 @@ std::vector<int> AFPOP(NumericVector sines, NumericVector cosines, double penalt
       }// else purn it. 
     }
     
-    interval_set<double> new_range = calculateDifference(Union);
+    interval_set<double> new_range = complementInterval(Union);
     CosineSegment Ft(new_range, t, sines[t], cosines[t], maximum);
     Fs_new.emplace_back(Ft);
     Fs = Fs_new;

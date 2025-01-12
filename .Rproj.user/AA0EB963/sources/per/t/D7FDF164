@@ -3,7 +3,7 @@
     "path": "C:/Users/smp22afa/Desktop/turning-point identification/turning-points indentification/Example.R",
     "project_path": "Example.R",
     "type": "r_source",
-    "hash": "495801516",
+    "hash": "1774096128",
     "contents": "",
     "dirty": false,
     "created": 1736595090974.0,
@@ -13,15 +13,15 @@
         "tempName": "Untitled1",
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "0,0",
-        "scrollLine": "0"
+        "cursorPosition": "76,11",
+        "scrollLine": "73"
     },
     "folds": "",
-    "lastKnownWriteTime": 1736629186,
+    "lastKnownWriteTime": 1736702903,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1736629186586,
+    "last_content_update": 1736702903550,
     "read_only": false,
     "read_only_alternatives": []
 }
