@@ -1,7 +1,7 @@
 
 ################################################################################
 #
-# Purpose: Detecting turning points in high-resolution data on animal movement
+# Purpose: Detecting turning points in high-frequency animal movement data
 #
 # Author: Abdulmajeed Alharbi
 #
