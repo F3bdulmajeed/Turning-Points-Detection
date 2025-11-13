@@ -73,13 +73,13 @@ kappa_mu  <- vm.mle(errors)$param[2]
 #############################################################################
 
 # fit the IID model 
-penalty <-  -2*log(length(h))/kappa_mu   * (1+rho)/(1-rho)
+penalty <-  -log(length(h))/kappa_mu   * (1+rho)/(1-rho)
 tps <-  AFPOP(sin(h), cos(h), penalty) 
 sort(tps)
 
 
 # fit the AR1 model 
-penalty <-  -2*log(length(h))/kappa_rho
+penalty <-  -log(length(h))/kappa_rho
 mu <- seq(-pi,pi,  length = 720 )
 cos_h <- cos(h) ; sin_h <- sin(h) ; cos_mu<- cos(mu) ; sin_mu<- sin(mu)
 Msine <- Outer(sin_h , sin_mu , "*")
