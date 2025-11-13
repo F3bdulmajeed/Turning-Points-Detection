@@ -1,11 +1,10 @@
 
 ################################################################################
 #
-# Purpose: Detecting turning points in high-frequency animal movement data
+# Purpose: Efficient statistical inference of turning points in animal movement data.
 #
 # Author: Abdulmajeed Alharbi
 #
-# Reference: ....
 #
 # Date created: January 11 2025
 #
